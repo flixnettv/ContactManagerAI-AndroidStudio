@@ -1,0 +1,94 @@
+plugins {
+    id 'com.android.library'
+    id 'org.jetbrains.kotlin.android'
+    id 'kotlin-kapt'
+    id 'dagger.hilt.android.plugin'
+}
+
+android {
+    namespace 'com.flixflash.callermanager'
+    compileSdk rootProject.ext.compile_sdk_version
+
+    defaultConfig {
+        minSdk rootProject.ext.min_sdk_version
+        targetSdk rootProject.ext.target_sdk_version
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles "consumer-rules.pro"
+        
+        // FlixFlash Caller Manager Configuration
+        buildConfigField "String", "FLIXFLASH_CALLER_MODULE", "\"Advanced Caller Manager\""
+        buildConfigField "boolean", "FLIXFLASH_TRUECALLER_MODE", "true"
+        buildConfigField "boolean", "FLIXFLASH_CALL_RECORDING", "true"
+        buildConfigField "String", "FLIXFLASH_CALLER_ID_SOURCE", "\"Local Database\""
+    }
+
+    buildTypes {
+        debug {
+            buildConfigField "boolean", "FLIXFLASH_CALLER_DEBUG", "true"
+        }
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            buildConfigField "boolean", "FLIXFLASH_CALLER_DEBUG", "false"
+        }
+    }
+    
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+    
+    buildFeatures {
+        buildConfig true
+    }
+}
+
+dependencies {
+    implementation "androidx.core:core-ktx:$androidx_core_version"
+    implementation "androidx.lifecycle:lifecycle-runtime-ktx:$androidx_lifecycle_version"
+    
+    // FlixFlash Dependencies
+    implementation project(':aivoice')
+    implementation project(':spamdetection')
+    
+    // Dependency Injection - Hilt
+    implementation "com.google.dagger:hilt-android:$hilt_version"
+    kapt "com.google.dagger:hilt-compiler:$hilt_version"
+    
+    // Room Database for call logs
+    implementation "androidx.room:room-runtime:$room_version"
+    implementation "androidx.room:room-ktx:$room_version"
+    kapt "androidx.room:room-compiler:$room_version"
+    
+    // Coroutines
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
+    
+    // Contacts Provider
+    implementation 'androidx.core:core-ktx:1.12.0'
+    
+    // Phone and SMS Services
+    implementation 'androidx.lifecycle:lifecycle-service:2.7.0'
+    
+    // Audio Recording for call recording
+    implementation 'androidx.media:media:1.7.0'
+    
+    // JSON Parsing
+    implementation 'com.google.code.gson:gson:2.10.1'
+    
+    // DataStore for caller preferences
+    implementation 'androidx.datastore:datastore-preferences:1.0.0'
+    
+    // Work Manager for background tasks
+    implementation 'androidx.work:work-runtime-ktx:2.9.0'
+    
+    // Testing
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.mockito:mockito-core:5.7.0'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+}

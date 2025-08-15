@@ -1,0 +1,82 @@
+plugins {
+    id 'com.android.library'
+    id 'org.jetbrains.kotlin.android'
+    id 'kotlin-kapt'
+    id 'dagger.hilt.android.plugin'
+}
+
+android {
+    namespace 'com.flixflash.egyptianai'
+    compileSdk rootProject.ext.compile_sdk_version
+
+    defaultConfig {
+        minSdk rootProject.ext.min_sdk_version
+        targetSdk rootProject.ext.target_sdk_version
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles "consumer-rules.pro"
+        
+        // FlixFlash Egyptian AI Configuration
+        buildConfigField "String", "FLIXFLASH_EGYPTIAN_MODULE", "\"Egyptian Dialect AI\""
+        buildConfigField "String", "FLIXFLASH_DIALECT", "\"Egyptian Colloquial\""
+        buildConfigField "boolean", "FLIXFLASH_COMEDY_VOICE", "true"
+        buildConfigField "String", "FLIXFLASH_LOCALE", "\"ar-EG\""
+        
+        // Egyptian AI Voice Types
+        buildConfigField "String[]", "FLIXFLASH_VOICE_TYPES", "new String[]{\"young_male\", \"young_female\", \"elderly_male\", \"elderly_female\", \"child_male\", \"child_female\", \"deep_scary\", \"funny_comedian\"}"
+    }
+
+    buildTypes {
+        debug {
+            buildConfigField "boolean", "FLIXFLASH_EGYPTIAN_DEBUG", "true"
+        }
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            buildConfigField "boolean", "FLIXFLASH_EGYPTIAN_DEBUG", "false"
+        }
+    }
+    
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+    
+    buildFeatures {
+        buildConfig true
+    }
+}
+
+dependencies {
+    implementation "androidx.core:core-ktx:$androidx_core_version"
+    implementation "androidx.lifecycle:lifecycle-runtime-ktx:$androidx_lifecycle_version"
+    
+    // FlixFlash AI Voice Module Dependency
+    implementation project(':aivoice')
+    
+    // Dependency Injection - Hilt
+    implementation "com.google.dagger:hilt-android:$hilt_version"
+    kapt "com.google.dagger:hilt-compiler:$hilt_version"
+    
+    // Coroutines
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
+    
+    // JSON Parsing for Egyptian responses
+    implementation 'com.google.code.gson:gson:2.10.1'
+    
+    // DataStore for Egyptian preferences
+    implementation 'androidx.datastore:datastore-preferences:1.0.0'
+    
+    // Natural Language Processing for Egyptian Dialect
+    // Note: Using open-source alternatives for NLP
+    
+    // Testing
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.mockito:mockito-core:5.7.0'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+}
