@@ -76,6 +76,16 @@ android {
             excludes += '/META-INF/NOTICE.txt'
         }
     }
+
+    // Ensure per-ABI APK outputs alongside a universal APK
+    splits {
+        abi {
+            enable true
+            reset()
+            include 'arm64-v8a', 'armeabi-v7a', 'x86_64'
+            universalApk true
+        }
+    }
 }
 
 dependencies {
