@@ -1,0 +1,42 @@
+{
+  "plugins_version": "1.0.0",
+  "enabled": true,
+  "auto_update": true,
+  "plugins": [
+    {
+      "name": "Advanced AI Voice Recognition",
+      "package": "advanced-ai-voice-recognition-1.0.0.jar",
+      "enabled": true,
+      "priority": 1,
+      "category": "ai"
+    },
+    {
+      "name": "Voice Personality Engine",
+      "package": "voice-personality-engine-1.0.0.jar",
+      "enabled": true,
+      "priority": 2,
+      "category": "ai"
+    },
+    {
+      "name": "Smart Response Generator",
+      "package": "smart-response-generator-1.0.0.jar",
+      "enabled": true,
+      "priority": 3,
+      "category": "ai"
+    },
+    {
+      "name": "Advanced Spam Shield",
+      "package": "advanced-spam-shield-1.0.0.jar",
+      "enabled": true,
+      "priority": 1,
+      "category": "security"
+    },
+    {
+      "name": "Call Encryption Pro",
+      "package": "call-encryption-pro-1.0.0.jar",
+      "enabled": true,
+      "priority": 2,
+      "category": "security"
+    }
+  ]
+}

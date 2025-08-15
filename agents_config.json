@@ -1,0 +1,35 @@
+{
+  "agents_version": "1.0.0",
+  "enabled": true,
+  "max_concurrent_agents": 3,
+  "default_language": "egyptian_arabic",
+  "agents": [
+    {
+      "name": "Business Call Agent",
+      "package": "business-call-agent-1.0.0.jar",
+      "enabled": true,
+      "category": "business",
+      "intelligence_level": 95,
+      "voice_type": "professional_male",
+      "active_hours": "09:00-17:00"
+    },
+    {
+      "name": "Customer Service Agent",
+      "package": "customer-service-agent-1.0.0.jar",
+      "enabled": true,
+      "category": "business",
+      "intelligence_level": 92,
+      "voice_type": "friendly_female",
+      "active_hours": "24/7"
+    },
+    {
+      "name": "Family Assistant Agent",
+      "package": "family-assistant-agent-1.0.0.jar",
+      "enabled": true,
+      "category": "family",
+      "intelligence_level": 90,
+      "voice_type": "warm_female",
+      "active_hours": "06:00-22:00"
+    }
+  ]
+}
