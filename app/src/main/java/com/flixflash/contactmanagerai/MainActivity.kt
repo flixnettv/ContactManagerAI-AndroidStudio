@@ -148,6 +148,9 @@ fun MainAppContent() {
                 composable("calls") {
                     CallsScreen()
                 }
+                composable("sms") {
+                    com.flixflash.contactmanagerai.ui.screens.SmsScreen()
+                }
                 composable("ai_assistant") {
                     AIAssistantScreen()
                 }
@@ -221,6 +224,7 @@ fun FlixFlashBottomNavigation(navController: NavHostController) {
     val items = listOf(
         NavigationItem("home", "الرئيسية", Icons.Default.Home),
         NavigationItem("contacts", "الأشخاص", Icons.Default.Contacts),
+        NavigationItem("sms", "الرسائل", Icons.Default.Message),
         NavigationItem("calls", "المكالمات", Icons.Default.Phone),
         NavigationItem("ai_assistant", "المساعد AI", Icons.Default.SmartToy),
         NavigationItem("settings", "الإعدادات", Icons.Default.Settings)
