@@ -154,6 +154,9 @@ fun MainAppContent() {
                 composable("ai_assistant") {
                     com.flixflash.contactmanagerai.ui.screens.AiCallScreen()
                 }
+                composable("transcription") {
+                    com.flixflash.contactmanagerai.ui.screens.TranscriptionScreen()
+                }
                 composable("settings") {
                     SettingsScreen(navController)
                 }
@@ -619,6 +622,7 @@ fun SettingsScreen(navController: NavHostController) {
         Divider()
         Button(onClick = { navController.navigate("advanced_settings") }) { Text("تفضيلات متقدمة") }
         Button(onClick = { navController.navigate("caller_id") }) { Text("Caller ID") }
+        Button(onClick = { navController.navigate("transcription") }) { Text("النسخ الحي Vosk") }
     }
 }
 
