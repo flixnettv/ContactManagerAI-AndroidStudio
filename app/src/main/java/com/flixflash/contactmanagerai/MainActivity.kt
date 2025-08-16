@@ -166,6 +166,9 @@ fun MainAppContent() {
                 composable("advanced_settings") {
                     com.flixflash.contactmanagerai.ui.screens.AdvancedSettingsScreen()
                 }
+                composable("diagnostics") {
+                    com.flixflash.contactmanagerai.ui.screens.DiagnosticsScreen()
+                }
                 composable("add_contact") {
                     AddContactScreen(navController)
                 }
@@ -627,6 +630,7 @@ fun SettingsScreen(navController: NavHostController) {
         Button(onClick = { navController.navigate("caller_id") }) { Text("Caller ID") }
         Button(onClick = { navController.navigate("transcription") }) { Text("النسخ الحي Vosk") }
         Button(onClick = { navController.navigate("blocklist") }) { Text("قائمة الحظر") }
+        Button(onClick = { navController.navigate("diagnostics") }) { Text("التشخيص") }
     }
 }
 
