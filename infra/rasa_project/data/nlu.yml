@@ -1,0 +1,15 @@
+version: "3.1"
+nlu:
+  - intent: greet
+    examples: |
+      - مرحباً
+      - أهلاً
+  - intent: set_call_reason
+    examples: |
+      - سبب المكالمة [عمل](reason)
+      - السبب [طارئ](reason)
+      - السبب [شخصي](reason)
+  - intent: schedule_call
+    examples: |
+      - جدولة مكالمة [غداً](datetime) في [5 مساء](datetime)
+      - حدد مكالمة يوم [الأربعاء](datetime)

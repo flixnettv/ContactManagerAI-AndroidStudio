@@ -1,0 +1,21 @@
+language: ar
+
+pipeline:
+  - name: WhitespaceTokenizer
+  - name: RegexFeaturizer
+  - name: LexicalSyntacticFeaturizer
+  - name: CountVectorsFeaturizer
+  - name: CountVectorsFeaturizer
+    analyzer: char_wb
+    min_ngram: 1
+    max_ngram: 4
+  - name: DIETClassifier
+    epochs: 30
+  - name: EntitySynonymMapper
+  - name: ResponseSelector
+    epochs: 20
+policies:
+  - name: MemoizationPolicy
+  - name: RulePolicy
+  - name: TEDPolicy
+    epochs: 20
