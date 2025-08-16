@@ -161,13 +161,29 @@ class SpamMLEngine @Inject constructor(
      * تصنيف نص رسالة باستخدام النموذج المحلي، مع fallback إلى خادم عند ثقة منخفضة
      */
     suspend fun classifyMessageWithFallback(text: String): Pair<Boolean, Float> {
-        val (localIsSpam, localScore) = analyzeNumber(text) // Assuming analyzeNumber can classify text
+        val (localIsSpam, localScore) = classifyMessageLocal(text)
         if (localScore >= HIGH_CONFIDENCE_THRESHOLD || localScore < LOW_CONFIDENCE_THRESHOLD) {
             return localIsSpam to localScore
         }
         // ثقة متوسطة: استخدم خادم التصنيف كمرجع
         val remote = tryRemoteClassification(text)
         return remote ?: (localIsSpam to localScore)
+    }
+
+    /**
+     * تصنيف محلي بسيط للنصوص باستخدام كلمات مفتاحية ودرجات
+     */
+    fun classifyMessageLocal(text: String): Pair<Boolean, Float> {
+        val keywords = listOf(
+            "win","prize","click","free","loan","credit","bitcoin","crypto",
+            "ربحت","جائزة","اضغط","مجاني","قرض","بطاقة","بتكوين","عملات"
+        )
+        val lower = text.lowercase()
+        var score = 0f
+        for (kw in keywords) if (lower.contains(kw)) score += 0.15f
+        score = score.coerceAtMost(1f)
+        val isSpam = score >= 0.3f
+        return isSpam to score
     }
 
     private suspend fun tryRemoteClassification(text: String): Pair<Boolean, Float>? = withContext(Dispatchers.IO) {
