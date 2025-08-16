@@ -50,7 +50,6 @@ fun AiCallScreen() {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = { vm.send("user", "set_call_reason: $reason") }) { Text("إرسال للـ Rasa") }
             Button(onClick = {
-                // TTS preview
                 val text = if (vm.replies.isNotEmpty()) vm.replies.joinToString(" ") else "سبب المكالمة: $reason"
                 kotlinx.coroutines.GlobalScope.launch {
                     runCatching { vm.tts(text) }.onSuccess { AudioPlayerHelper.playWav(ctx, it) }

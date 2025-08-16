@@ -1,0 +1,78 @@
+package com.flixflash.contactmanagerai.data.voice
+
+import com.flixflash.contactmanagerai.data.network.RasaApi
+import com.flixflash.contactmanagerai.data.network.RasaMessageRequest
+import com.flixflash.contactmanagerai.data.settings.SettingsRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class AiConversationManager @Inject constructor(
+	private val settings: SettingsRepository,
+	private val rasa: RasaApi,
+	private val http: OkHttpClient
+) {
+	private val scope = CoroutineScope(Dispatchers.IO)
+	private var stt: VoskSttClient? = null
+	private var sttJob: Job? = null
+	private val ttsQueue = Channel<String>(capacity = Channel.UNLIMITED)
+	private var ttsJob: Job? = null
+	@Volatile private var running = false
+
+	fun isRunning(): Boolean = running
+
+	fun start() {
+		if (running) return
+		running = true
+		scope.launch {
+			val cfg = settings.settingsFlow.first()
+			stt = VoskSttClient(cfg.voskWsUrl)
+			sttJob = scope.launch {
+				stt!!.transcripts.collect { text ->
+					// Send to Rasa and enqueue TTS of replies
+					val replies = try { rasa.sendMessage(RasaMessageRequest("user", text)) } catch (_: Exception) { emptyList() }
+					replies.mapNotNull { it.text }.forEach { ttsQueue.trySend(it) }
+				}
+			}
+			stt!!.start()
+			// Start TTS worker
+			ttsJob = scope.launch {
+				for (text in ttsQueue) {
+					try { playTts(cfg.piperUrl, text) } catch (_: Exception) { /* ignore */ }
+					if (!running) break
+				}
+			}
+		}
+	}
+
+	fun stop() {
+		running = false
+		try { stt?.stop() } catch (_: Exception) {}
+		stt = null
+		try { sttJob?.cancel() } catch (_: Exception) {}
+		sttJob = null
+		try { ttsJob?.cancel() } catch (_: Exception) {}
+		ttsJob = null
+		ttsQueue.close()
+	}
+
+	private fun playTts(base: String, text: String) {
+		val url = if (base.endsWith("/")) base + "synthesize" else "$base/synthesize"
+		val req = Request.Builder().url(url).post(text.toRequestBody("text/plain".toMediaType())).build()
+		http.newCall(req).execute().use { resp ->
+			val bytes = resp.body?.bytes() ?: return
+			// NOTE: This requires Android context; AudioPlayerHelper should be called from UI or injected differently.
+			// For now, this method will be invoked from a UI-aware layer to actually play audio.
+		}
+	}
+}
