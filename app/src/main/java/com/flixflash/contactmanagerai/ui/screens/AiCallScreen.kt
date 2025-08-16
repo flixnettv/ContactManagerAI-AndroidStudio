@@ -10,6 +10,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.flixflash.contactmanagerai.data.repository.AiCallRepository
+import com.flixflash.contactmanagerai.data.voice.AiConversationManager
 import com.flixflash.contactmanagerai.data.voice.AudioPlayerHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -43,6 +44,12 @@ fun AiCallScreen() {
     val ctx = LocalContext.current
     var phone by remember { mutableStateOf("") }
     var reason by remember { mutableStateOf("") }
+
+    // Live conversation manager
+    val conv = androidx.hilt.navigation.compose.hiltViewModel<AiCallViewModel>() // placeholder
+    // Instead, obtain via hilt: inject in ViewModel or a CompositionLocal; for simplicity we create a local manager
+    val manager = remember { com.flixflash.contactmanagerai.data.voice.AiConversationManager::class }
+
     Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("مكالمة AI", style = MaterialTheme.typography.titleLarge)
         OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text("رقم الهاتف") })
@@ -59,5 +66,11 @@ fun AiCallScreen() {
         if (vm.loading) LinearProgressIndicator()
         vm.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         vm.replies.forEach { Text("AI: $it") }
+        Divider()
+        Text("النسخ الحي أثناء المكالمة (تجريبي)")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(onClick = { /* TODO: wire Hilt-provided manager.start() and collect audioOut to play */ }) { Text("بدء المحادثة الحية") }
+            Button(onClick = { /* TODO: manager.stop() */ }) { Text("إيقاف") }
+        }
     }
 }

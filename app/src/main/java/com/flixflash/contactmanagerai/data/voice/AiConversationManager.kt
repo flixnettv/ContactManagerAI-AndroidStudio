@@ -7,6 +7,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaType
@@ -29,6 +31,9 @@ class AiConversationManager @Inject constructor(
 	private var ttsJob: Job? = null
 	@Volatile private var running = false
 
+	private val _audioOut = MutableSharedFlow<ByteArray>(extraBufferCapacity = 8)
+	val audioOut: SharedFlow<ByteArray> = _audioOut
+
 	fun isRunning(): Boolean = running
 
 	fun start() {
@@ -39,13 +44,11 @@ class AiConversationManager @Inject constructor(
 			stt = VoskSttClient(cfg.voskWsUrl)
 			sttJob = scope.launch {
 				stt!!.transcripts.collect { text ->
-					// Send to Rasa and enqueue TTS of replies
 					val replies = try { rasa.sendMessage(RasaMessageRequest("user", text)) } catch (_: Exception) { emptyList() }
 					replies.mapNotNull { it.text }.forEach { ttsQueue.trySend(it) }
 				}
 			}
 			stt!!.start()
-			// Start TTS worker
 			ttsJob = scope.launch {
 				for (text in ttsQueue) {
 					try { playTts(cfg.piperUrl, text) } catch (_: Exception) { /* ignore */ }
@@ -63,7 +66,7 @@ class AiConversationManager @Inject constructor(
 		sttJob = null
 		try { ttsJob?.cancel() } catch (_: Exception) {}
 		ttsJob = null
-		ttsQueue.close()
+		try { ttsQueue.close() } catch (_: Exception) {}
 	}
 
 	private fun playTts(base: String, text: String) {
@@ -71,8 +74,7 @@ class AiConversationManager @Inject constructor(
 		val req = Request.Builder().url(url).post(text.toRequestBody("text/plain".toMediaType())).build()
 		http.newCall(req).execute().use { resp ->
 			val bytes = resp.body?.bytes() ?: return
-			// NOTE: This requires Android context; AudioPlayerHelper should be called from UI or injected differently.
-			// For now, this method will be invoked from a UI-aware layer to actually play audio.
+			scope.launch { _audioOut.emit(bytes) }
 		}
 	}
 }
