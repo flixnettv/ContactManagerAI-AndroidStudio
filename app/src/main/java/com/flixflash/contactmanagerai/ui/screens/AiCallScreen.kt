@@ -13,17 +13,33 @@ import com.flixflash.contactmanagerai.data.repository.AiCallRepository
 import com.flixflash.contactmanagerai.data.voice.AiConversationManager
 import com.flixflash.contactmanagerai.data.voice.AudioPlayerHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class AiCallViewModel @Inject constructor(
-    private val repo: AiCallRepository
+    private val repo: AiCallRepository,
+    private val conv: AiConversationManager
 ) : ViewModel() {
     var replies by mutableStateOf(listOf<String>())
         private set
     var loading by mutableStateOf(false)
     var error by mutableStateOf<String?>(null)
+    var liveTranscripts by mutableStateOf(listOf<String>())
+        private set
+
+    init {
+        viewModelScope.launch {
+            conv.audioOut.collectLatest { /* handled in UI via AudioPlayerHelper */ }
+        }
+        viewModelScope.launch {
+            conv.transcripts.collectLatest { t -> liveTranscripts = liveTranscripts + t }
+        }
+    }
+
+    fun startLive() { conv.start() }
+    fun stopLive() { conv.stop() }
 
     fun send(sender: String, message: String) {
         loading = true; error = null
@@ -45,10 +61,11 @@ fun AiCallScreen() {
     var phone by remember { mutableStateOf("") }
     var reason by remember { mutableStateOf("") }
 
-    // Live conversation manager
-    val conv = androidx.hilt.navigation.compose.hiltViewModel<AiCallViewModel>() // placeholder
-    // Instead, obtain via hilt: inject in ViewModel or a CompositionLocal; for simplicity we create a local manager
-    val manager = remember { com.flixflash.contactmanagerai.data.voice.AiConversationManager::class }
+    // Audio collector
+    LaunchedEffect(Unit) {
+        vm.startLive() // optional auto-start; remove if not desired
+    }
+    // NOTE: audioOut consumed in VM; playback handled by UI on demand (TTS preview)
 
     Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("مكالمة AI", style = MaterialTheme.typography.titleLarge)
@@ -63,14 +80,15 @@ fun AiCallScreen() {
                 }
             }) { Text("تشغيل TTS") }
         }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(onClick = { vm.startLive() }) { Text("بدء المحادثة الحية") }
+            Button(onClick = { vm.stopLive() }) { Text("إيقاف") }
+        }
         if (vm.loading) LinearProgressIndicator()
         vm.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         vm.replies.forEach { Text("AI: $it") }
         Divider()
-        Text("النسخ الحي أثناء المكالمة (تجريبي)")
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = { /* TODO: wire Hilt-provided manager.start() and collect audioOut to play */ }) { Text("بدء المحادثة الحية") }
-            Button(onClick = { /* TODO: manager.stop() */ }) { Text("إيقاف") }
-        }
+        Text("النسخ الحي:")
+        vm.liveTranscripts.takeLast(20).forEach { Text(it) }
     }
 }

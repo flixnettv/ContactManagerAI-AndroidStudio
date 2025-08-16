@@ -33,6 +33,8 @@ class AiConversationManager @Inject constructor(
 
 	private val _audioOut = MutableSharedFlow<ByteArray>(extraBufferCapacity = 8)
 	val audioOut: SharedFlow<ByteArray> = _audioOut
+	private val _transcriptsOut = MutableSharedFlow<String>(extraBufferCapacity = 32)
+	val transcripts: SharedFlow<String> = _transcriptsOut
 
 	fun isRunning(): Boolean = running
 
@@ -44,6 +46,8 @@ class AiConversationManager @Inject constructor(
 			stt = VoskSttClient(cfg.voskWsUrl)
 			sttJob = scope.launch {
 				stt!!.transcripts.collect { text ->
+					// Emit transcript and forward to Rasa
+					scope.launch { _transcriptsOut.emit(text) }
 					val replies = try { rasa.sendMessage(RasaMessageRequest("user", text)) } catch (_: Exception) { emptyList() }
 					replies.mapNotNull { it.text }.forEach { ttsQueue.trySend(it) }
 				}
