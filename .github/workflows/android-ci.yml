@@ -8,6 +8,9 @@ on:
   release:
     types: [ created ]
 
+permissions:
+  contents: write
+
 jobs:
   unit-tests:
     name: 🧪 Unit Tests (spamdetection)
@@ -87,50 +90,88 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     if: github.event_name == 'release'
-    
     steps:
-    - name: 📥 Checkout
-      uses: actions/checkout@v4
-      
-    - name: ☕ Set up JDK 17
-      uses: actions/setup-java@v3
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        
-    - name: 🐘 Setup Gradle
-      uses: gradle/gradle-build-action@v2
-      
-    - name: 📋 Grant execute permission for gradlew
-      run: chmod +x gradlew
-      
-    - name: 🔐 Create keystore
-      run: |
-        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/keystore.jks
-      if: ${{ secrets.KEYSTORE_BASE64 }}
-      
-    - name: 🚀 Build Release APK
-      run: ./gradlew assembleRelease
-      env:
-        KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-      
-    - name: 📱 Upload Release APK
-      uses: actions/upload-artifact@v3
-      with:
-        name: release-apk
-        path: app/build/outputs/apk/release/*.apk
-        
-    - name: 🚀 Upload to Release
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_path: app/build/outputs/apk/release/app-release.apk
-        asset_name: FlixFlash-ContactManager-AI-${{ github.event.release.tag_name }}.apk
-        asset_content_type: application/vnd.android.package-archive
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+      - name: ☕ Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: 🐘 Setup Gradle
+        uses: gradle/gradle-build-action@v2
+      - name: 📋 Grant execute permission for gradlew
+        run: chmod +x gradlew
+      - name: 🔐 Create keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/keystore.jks
+        if: ${{ secrets.KEYSTORE_BASE64 }}
+      - name: 🚀 Build Release APK
+        run: ./gradlew assembleRelease
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+      - name: 📱 Upload Release APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: release-apk
+          path: app/build/outputs/apk/release/*.apk
+      - name: 🚀 Upload to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: app/build/outputs/apk/release/app-release.apk
+          asset_name: FlixFlash-ContactManager-AI-${{ github.event.release.tag_name }}.apk
+          asset_content_type: application/vnd.android.package-archive
+
+  notify:
+    name: 📢 Notify Status
+    runs-on: ubuntu-latest
+    needs: [test, build, build-release]
+    if: always()
+    steps:
+      - name: 📢 Notify Success
+        if: ${{ needs.test.result == 'success' && needs.build.result == 'success' }}
+        run: |
+          echo "✅ FlixFlash Contact Manager AI - Build Successful!"
+          echo "🤖 All tests passed and APK built successfully"
+      - name: 📢 Notify Failure
+        if: ${{ needs.test.result == 'failure' || needs.build.result == 'failure' }}
+        run: |
+          echo "❌ FlixFlash Contact Manager AI - Build Failed!"
+          echo "🚨 Please check the logs for details"
+
+  commit-apk-to-repo:
+    name: 📦 Commit APKs into final_apk_delivery
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Download debug APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: debug-apk
+          path: _apk_debug
+      - name: Prepare delivery folder
+        run: |
+          mkdir -p final_apk_delivery
+          cp -f _apk_debug/*.apk final_apk_delivery/ || true
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add final_apk_delivery/*.apk || true
+          if git commit -m "chore: add latest debug APK(s) to final_apk_delivery"; then
+            git push
+          else
+            echo "No changes to commit"
+          fi
 
   lint:
     name: 🔍 Code Quality Check
@@ -228,25 +269,6 @@ jobs:
       with:
         name: dependency-report
         path: build/reports/
-
-  notify:
-    name: 📢 Notify Status
-    runs-on: ubuntu-latest
-    needs: [test, build, lint, security-scan, dependency-check]
-    if: always()
-    
-    steps:
-    - name: 📢 Notify Success
-      if: ${{ needs.test.result == 'success' && needs.build.result == 'success' }}
-      run: |
-        echo "✅ FlixFlash Contact Manager AI - Build Successful!"
-        echo "🤖 All tests passed and APK built successfully"
-        
-    - name: 📢 Notify Failure
-      if: ${{ needs.test.result == 'failure' || needs.build.result == 'failure' }}
-      run: |
-        echo "❌ FlixFlash Contact Manager AI - Build Failed!"
-        echo "🚨 Please check the logs for details"
 
   release-apk:
     name: 🔐 Build Signed Release APK
