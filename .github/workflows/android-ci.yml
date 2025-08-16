@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   unit-tests:
@@ -161,17 +162,35 @@ jobs:
       - name: Prepare delivery folder
         run: |
           mkdir -p final_apk_delivery
-          cp -f _apk_debug/*.apk final_apk_delivery/ || true
-      - name: Commit and push
+          find _apk_debug -type f -name "*.apk" -exec cp -f {} final_apk_delivery/ \;
+      - name: Commit changes
+        id: commit
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add final_apk_delivery/*.apk || true
           if git commit -m "chore: add latest debug APK(s) to final_apk_delivery"; then
-            git push
+            echo "committed=1" >> $GITHUB_OUTPUT
           else
-            echo "No changes to commit"
+            echo "committed=0" >> $GITHUB_OUTPUT
           fi
+      - name: Push changes
+        id: push
+        run: |
+          set -e
+          if [ "${{ steps.commit.outputs.committed }}" = "1" ]; then
+            git push || echo "push_failed=1" >> $GITHUB_OUTPUT
+          else
+            echo "No changes to commit"; echo "push_failed=0" >> $GITHUB_OUTPUT
+          fi
+      - name: Create PR fallback
+        if: ${{ steps.push.outputs.push_failed == '1' }}
+        uses: peter-evans/create-pull-request@v5
+        with:
+          commit-message: "chore: add latest debug APK(s) to final_apk_delivery"
+          branch: ci/apk-delivery
+          title: "Add latest debug APK(s) to final_apk_delivery"
+          body: "This PR adds the latest built debug APKs into final_apk_delivery."
 
   lint:
     name: 🔍 Code Quality Check
@@ -315,14 +334,32 @@ jobs:
       - name: Prepare delivery folder
         run: |
           mkdir -p final_apk_delivery
-          cp -f _apk_release/*.apk final_apk_delivery/ || true
-      - name: Commit and push
+          find _apk_release -type f -name "*.apk" -exec cp -f {} final_apk_delivery/ \;
+      - name: Commit changes
+        id: commit
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add final_apk_delivery/*.apk || true
           if git commit -m "chore: add latest release APK(s) to final_apk_delivery"; then
-            git push
+            echo "committed=1" >> $GITHUB_OUTPUT
           else
-            echo "No changes to commit"
+            echo "committed=0" >> $GITHUB_OUTPUT
           fi
+      - name: Push changes
+        id: push
+        run: |
+          set -e
+          if [ "${{ steps.commit.outputs.committed }}" = "1" ]; then
+            git push || echo "push_failed=1" >> $GITHUB_OUTPUT
+          else
+            echo "No changes to commit"; echo "push_failed=0" >> $GITHUB_OUTPUT
+          fi
+      - name: Create PR fallback
+        if: ${{ steps.push.outputs.push_failed == '1' }}
+        uses: peter-evans/create-pull-request@v5
+        with:
+          commit-message: "chore: add latest release APK(s) to final_apk_delivery"
+          branch: ci/release-apk-delivery
+          title: "Add latest release APK(s) to final_apk_delivery"
+          body: "This PR adds the latest built release APKs into final_apk_delivery."
