@@ -157,6 +157,9 @@ fun MainAppContent() {
                 composable("settings") {
                     SettingsScreen(navController)
                 }
+                composable("advanced_settings") {
+                    com.flixflash.contactmanagerai.ui.screens.AdvancedSettingsScreen()
+                }
                 composable("add_contact") {
                     AddContactScreen(navController)
                 }
@@ -614,7 +617,7 @@ fun SettingsScreen(navController: NavHostController) {
     ) {
         Text("الإعدادات", style = MaterialTheme.typography.titleLarge)
         Divider()
-        Button(onClick = { /* TODO: إعدادات التطبيق */ }) { Text("تفضيلات عامة") }
+        Button(onClick = { navController.navigate("advanced_settings") }) { Text("تفضيلات متقدمة") }
         Button(onClick = { navController.navigate("caller_id") }) { Text("Caller ID") }
     }
 }
