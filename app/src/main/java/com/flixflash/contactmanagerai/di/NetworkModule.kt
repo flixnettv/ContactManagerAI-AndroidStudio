@@ -11,7 +11,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -27,14 +27,13 @@ object NetworkModule {
 	fun provideBaseUrlInterceptor(settings: SettingsRepository): Interceptor = Interceptor { chain ->
 		val original: Request = chain.request()
 		val current = runBlocking { settings.settingsFlow.first() }
-		val base = current.callerIdUrl.ifBlank { BuildConfig.CALLERID_BASE_URL }
-		val newUrl: HttpUrl = original.url.newBuilder()
-			.scheme(HttpUrl.parse(base)!!.scheme())
-			.host(HttpUrl.parse(base)!!.host())
-			.port(HttpUrl.parse(base)!!.port())
+		val base = current.callerIdUrl.ifBlank { BuildConfig.CALLERID_BASE_URL }.toHttpUrl()
+		val newUrl = original.url.newBuilder()
+			.scheme(base.scheme)
+			.host(base.host)
+			.port(base.port)
 			.build()
-		val newReq = original.newBuilder().url(newUrl).build()
-		chain.proceed(newReq)
+		chain.proceed(original.newBuilder().url(newUrl).build())
 	}
 
 	@Provides @Singleton
@@ -45,9 +44,9 @@ object NetworkModule {
 
 	@Provides @Singleton
 	fun provideRetrofit(client: OkHttpClient, settings: SettingsRepository): Retrofit {
-		val base = runBlocking { settings.settingsFlow.first().callerIdUrl }
+		val base = runBlocking { settings.settingsFlow.first().callerIdUrl.ifBlank { BuildConfig.CALLERID_BASE_URL } }
 		return Retrofit.Builder()
-			.baseUrl(base.ifBlank { BuildConfig.CALLERID_BASE_URL })
+			.baseUrl(base)
 			.client(client)
 			.addConverterFactory(MoshiConverterFactory.create())
 			.build()
@@ -61,17 +60,12 @@ object NetworkModule {
 
 	@Provides @Singleton
 	fun provideRasaRetrofit(settings: SettingsRepository, baseClient: OkHttpClient): Retrofit {
-		val current = runBlocking { settings.settingsFlow.first() }
-		val base = current.rasaUrl.ifBlank { BuildConfig.RASA_BASE_URL }
-		val client = baseClient.newBuilder()
-			.addInterceptor { chain ->
-				val original = chain.request()
-				val url = original.url
-				val parsed = HttpUrl.parse(base)!!
-				val newUrl = url.newBuilder().scheme(parsed.scheme()).host(parsed.host()).port(parsed.port()).build()
-				chain.proceed(original.newBuilder().url(newUrl).build())
-			}
-			.build()
+		val base = runBlocking { settings.settingsFlow.first().rasaUrl.ifBlank { BuildConfig.RASA_BASE_URL } }.toHttpUrl()
+		val client = baseClient.newBuilder().addInterceptor { chain ->
+			val original = chain.request(); val url = original.url
+			val newUrl = url.newBuilder().scheme(base.scheme).host(base.host).port(base.port).build()
+			chain.proceed(original.newBuilder().url(newUrl).build())
+		}.build()
 		return Retrofit.Builder()
 			.baseUrl(base)
 			.client(client)
