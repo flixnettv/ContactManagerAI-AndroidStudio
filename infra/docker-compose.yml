@@ -1,0 +1,30 @@
+version: "3.9"
+
+services:
+  vosk:
+    image: alphacep/vosk-server:latest
+    container_name: cm_vosk
+    command: python3 /opt/vosk-server/websocket/asr_server.py --model /models/vosk-model-small-ar-0.22 --port 2700
+    volumes:
+      - ./models/vosk:/models
+    ports:
+      - "2700:2700"
+    restart: unless-stopped
+
+  piper:
+    image: rhasspy/tts-piper:latest
+    container_name: cm_piper
+    command: --model /voices/ar_voice.onnx --config /voices/ar_voice.json --host 0.0.0.0 --port 59125 --threads 2
+    volumes:
+      - ./models/piper:/voices
+    ports:
+      - "59125:59125"
+    restart: unless-stopped
+
+  rasa:
+    image: rasa/rasa:3.6.20
+    container_name: cm_rasa
+    command: ["run", "--enable-api", "--cors", "*", "--port", "5005"]
+    ports:
+      - "5005:5005"
+    restart: unless-stopped
