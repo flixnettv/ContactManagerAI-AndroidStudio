@@ -157,6 +157,9 @@ fun MainAppContent() {
                 composable("add_contact") {
                     AddContactScreen(navController)
                 }
+                composable("caller_id") {
+                    com.flixflash.contactmanagerai.ui.screens.CallerIdScreen()
+                }
             }
         }
     }
