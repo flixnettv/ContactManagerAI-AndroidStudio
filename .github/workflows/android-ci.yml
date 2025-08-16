@@ -228,12 +228,12 @@ jobs:
         
     - name: 🐘 Setup Gradle
       uses: gradle/gradle-build-action@v2
-      - name: 🛠️ Set up Android SDK
-        uses: android-actions/setup-android@v3
-      - name: 🧩 Ensure Gradle wrapper
-        run: |
-          test -f gradle/wrapper/gradle-wrapper.jar || curl -sSL https://raw.githubusercontent.com/gradle/gradle/v8.1.1/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
-      
+    - name: 🛠️ Set up Android SDK
+      uses: android-actions/setup-android@v3
+    - name: 🧩 Ensure Gradle wrapper
+      run: |
+        test -f gradle/wrapper/gradle-wrapper.jar || curl -sSL https://raw.githubusercontent.com/gradle/gradle/v8.1.1/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
+    
     - name: 📋 Grant execute permission for gradlew
       run: chmod +x gradlew
       
@@ -270,12 +270,12 @@ jobs:
         
     - name: 🐘 Setup Gradle
       uses: gradle/gradle-build-action@v2
-      - name: 🛠️ Set up Android SDK
-        uses: android-actions/setup-android@v3
-      - name: 🧩 Ensure Gradle wrapper
-        run: |
-          test -f gradle/wrapper/gradle-wrapper.jar || curl -sSL https://raw.githubusercontent.com/gradle/gradle/v8.1.1/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
-      
+    - name: 🛠️ Set up Android SDK
+      uses: android-actions/setup-android@v3
+    - name: 🧩 Ensure Gradle wrapper
+      run: |
+        test -f gradle/wrapper/gradle-wrapper.jar || curl -sSL https://raw.githubusercontent.com/gradle/gradle/v8.1.1/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
+    
     - name: 📋 Grant execute permission for gradlew
       run: chmod +x gradlew
       
@@ -301,12 +301,12 @@ jobs:
         
     - name: 🐘 Setup Gradle
       uses: gradle/gradle-build-action@v2
-      - name: 🛠️ Set up Android SDK
-        uses: android-actions/setup-android@v3
-      - name: 🧩 Ensure Gradle wrapper
-        run: |
-          test -f gradle/wrapper/gradle-wrapper.jar || curl -sSL https://raw.githubusercontent.com/gradle/gradle/v8.1.1/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
-      
+    - name: 🛠️ Set up Android SDK
+      uses: android-actions/setup-android@v3
+    - name: 🧩 Ensure Gradle wrapper
+      run: |
+        test -f gradle/wrapper/gradle-wrapper.jar || curl -sSL https://raw.githubusercontent.com/gradle/gradle/v8.1.1/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
+    
     - name: 📋 Grant execute permission for gradlew
       run: chmod +x gradlew
       
