@@ -16,6 +16,14 @@ import java.nio.ByteOrder
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.*
+import com.flixflash.contactmanager.BuildConfig
+import com.flixflash.contactmanagerai.data.network.SmsSpamRequest
+import com.flixflash.contactmanagerai.data.network.SpamApi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import retrofit2.Retrofit
+import retrofit2.converter.moshi.MoshiConverterFactory
 
 /**
  * FlixFlash Contact Manager AI
@@ -146,6 +154,35 @@ class SpamMLEngine @Inject constructor(
         } catch (e: Exception) {
             Log.e(TAG, "❌ Error during number analysis", e)
             return fallbackAnalysis(phoneNumber)
+        }
+    }
+    
+    /**
+     * تصنيف نص رسالة باستخدام النموذج المحلي، مع fallback إلى خادم عند ثقة منخفضة
+     */
+    suspend fun classifyMessageWithFallback(text: String): Pair<Boolean, Float> {
+        val (localIsSpam, localScore) = analyzeNumber(text) // Assuming analyzeNumber can classify text
+        if (localScore >= HIGH_CONFIDENCE_THRESHOLD || localScore < LOW_CONFIDENCE_THRESHOLD) {
+            return localIsSpam to localScore
+        }
+        // ثقة متوسطة: استخدم خادم التصنيف كمرجع
+        val remote = tryRemoteClassification(text)
+        return remote ?: (localIsSpam to localScore)
+    }
+
+    private suspend fun tryRemoteClassification(text: String): Pair<Boolean, Float>? = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val client = OkHttpClient.Builder().build()
+            val retrofit = Retrofit.Builder()
+                .baseUrl(BuildConfig.CALLERID_BASE_URL)
+                .client(client)
+                .addConverterFactory(MoshiConverterFactory.create())
+                .build()
+            val api = retrofit.create(SpamApi::class.java)
+            val res = api.classify(SmsSpamRequest(text))
+            res.is_spam to res.score.toFloat()
+        } catch (e: Exception) {
+            null
         }
     }
     

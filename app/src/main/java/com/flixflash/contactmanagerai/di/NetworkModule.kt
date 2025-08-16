@@ -2,6 +2,7 @@ package com.flixflash.contactmanagerai.di
 
 import com.flixflash.contactmanager.BuildConfig
 import com.flixflash.contactmanagerai.data.network.CallerIdApi
+import com.flixflash.contactmanagerai.data.network.SpamApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -30,4 +31,7 @@ object NetworkModule {
 
 	@Provides @Singleton
 	fun provideCallerIdApi(retrofit: Retrofit): CallerIdApi = retrofit.create(CallerIdApi::class.java)
+
+	@Provides @Singleton
+	fun provideSpamApi(retrofit: Retrofit): SpamApi = retrofit.create(SpamApi::class.java)
 }
