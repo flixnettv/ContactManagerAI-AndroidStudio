@@ -297,3 +297,32 @@ jobs:
         with:
           name: release-apk
           path: app/build/outputs/apk/release/*.apk
+
+  commit-release-apk-to-repo:
+    name: 📦 Commit Release APK into final_apk_delivery
+    runs-on: ubuntu-latest
+    needs: release-apk
+    if: github.event_name == 'release'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Download release APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-apk
+          path: _apk_release
+      - name: Prepare delivery folder
+        run: |
+          mkdir -p final_apk_delivery
+          cp -f _apk_release/*.apk final_apk_delivery/ || true
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add final_apk_delivery/*.apk || true
+          if git commit -m "chore: add latest release APK(s) to final_apk_delivery"; then
+            git push
+          else
+            echo "No changes to commit"
+          fi
