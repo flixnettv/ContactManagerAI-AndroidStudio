@@ -36,6 +36,7 @@ class SmsViewModel @Inject constructor(
     var hideSpam by mutableStateOf(true)
     var loading by mutableStateOf(false)
     var useBackend by mutableStateOf(true)
+    var conversationsMode by mutableStateOf(true)
     private val reported = mutableStateListOf<String>()
 
     fun load(context: android.content.Context) {
@@ -54,6 +55,16 @@ class SmsViewModel @Inject constructor(
             messages = classified
             loading = false
         }
+    }
+
+    fun grouped(): List<ConversationItem> {
+        val groups = messages.groupBy { it.address }
+        return groups.map { (addr, list) ->
+            val sorted = list.sortedByDescending { it.date }
+            val last = sorted.firstOrNull()
+            val spamCount = sorted.count { it.isSpam }
+            ConversationItem(address = addr, lastBody = last?.body ?: "", count = sorted.size, spamCount = spamCount)
+        }.sortedByDescending { it.count }
     }
 
     fun isReported(number: String): Boolean = reported.contains(number)
@@ -96,6 +107,13 @@ data class SmsItem(
     var isSpam: Boolean = false
 )
 
+data class ConversationItem(
+    val address: String,
+    val lastBody: String,
+    val count: Int,
+    val spamCount: Int
+)
+
 @Composable
 fun SmsScreen() {
     val vm: SmsViewModel = hiltViewModel()
@@ -112,20 +130,41 @@ fun SmsScreen() {
             Spacer(Modifier.width(8.dp))
             Text("AI")
             Switch(checked = vm.useBackend, onCheckedChange = { vm.useBackend = it; vm.load(context) })
+            Spacer(Modifier.width(8.dp))
+            Text("المحادثات")
+            Switch(checked = vm.conversationsMode, onCheckedChange = { vm.conversationsMode = it })
         }
         if (vm.loading) LinearProgressIndicator(Modifier.fillMaxWidth())
-        LazyColumn(Modifier.fillMaxSize()) {
-            items(vm.messages.filter { if (vm.hideSpam) !it.isSpam else true }) { msg ->
-                Card(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                    Column(Modifier.padding(8.dp)) {
-                        Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                            Text(msg.address, style = MaterialTheme.typography.titleSmall)
-                            if (vm.isReported(msg.address)) Text("مبلّغ", color = MaterialTheme.colorScheme.primary)
+        if (vm.conversationsMode) {
+            val convos = vm.grouped()
+            LazyColumn(Modifier.fillMaxSize()) {
+                items(convos) { c ->
+                    Card(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                        Column(Modifier.padding(8.dp)) {
+                            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                                Text(c.address, style = MaterialTheme.typography.titleSmall)
+                                if (c.spamCount > 0) Text("${c.spamCount} Spam", color = MaterialTheme.colorScheme.error)
+                            }
+                            Text(c.lastBody, maxLines = 2)
+                            Text("${c.count} رسائل")
                         }
-                        Text(msg.body, maxLines = 3)
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            if (msg.isSpam) Text("Spam", color = MaterialTheme.colorScheme.error)
-                            Button(onClick = { vm.reportSpam(msg.address) }, enabled = !vm.isReported(msg.address)) { Text("إبلاغ Spam") }
+                    }
+                }
+            }
+        } else {
+            LazyColumn(Modifier.fillMaxSize()) {
+                items(vm.messages.filter { if (vm.hideSpam) !it.isSpam else true }) { msg ->
+                    Card(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                        Column(Modifier.padding(8.dp)) {
+                            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                                Text(msg.address, style = MaterialTheme.typography.titleSmall)
+                                if (vm.isReported(msg.address)) Text("مبلّغ", color = MaterialTheme.colorScheme.primary)
+                            }
+                            Text(msg.body, maxLines = 3)
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                if (msg.isSpam) Text("Spam", color = MaterialTheme.colorScheme.error)
+                                Button(onClick = { vm.reportSpam(msg.address) }, enabled = !vm.isReported(msg.address)) { Text("إبلاغ Spam") }
+                            }
                         }
                     }
                 }
