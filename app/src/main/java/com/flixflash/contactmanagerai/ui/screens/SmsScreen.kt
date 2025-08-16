@@ -17,6 +17,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.flixflash.spamdetection.SpamMLEngine
 import com.flixflash.contactmanagerai.data.settings.SettingsRepository
+import com.flixflash.contactmanagerai.data.repository.CallerIdRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -27,13 +28,15 @@ import javax.inject.Inject
 @HiltViewModel
 class SmsViewModel @Inject constructor(
     private val spamEngine: SpamMLEngine,
-    private val settings: SettingsRepository
+    private val settings: SettingsRepository,
+    private val callerRepo: CallerIdRepository
 ) : ViewModel() {
     var messages by mutableStateOf(listOf<SmsItem>())
         private set
     var hideSpam by mutableStateOf(true)
     var loading by mutableStateOf(false)
     var useBackend by mutableStateOf(true)
+    private val reported = mutableStateListOf<String>()
 
     fun load(context: android.content.Context) {
         viewModelScope.launch {
@@ -50,6 +53,17 @@ class SmsViewModel @Inject constructor(
             }
             messages = classified
             loading = false
+        }
+    }
+
+    fun isReported(number: String): Boolean = reported.contains(number)
+
+    fun reportSpam(number: String) {
+        if (number.isBlank()) return
+        if (reported.contains(number)) return
+        viewModelScope.launch {
+            runCatching { callerRepo.reportSpam(number, "sms_user_report") }
+            reported.add(number)
         }
     }
 
@@ -104,9 +118,15 @@ fun SmsScreen() {
             items(vm.messages.filter { if (vm.hideSpam) !it.isSpam else true }) { msg ->
                 Card(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
                     Column(Modifier.padding(8.dp)) {
-                        Text(msg.address, style = MaterialTheme.typography.titleSmall)
+                        Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                            Text(msg.address, style = MaterialTheme.typography.titleSmall)
+                            if (vm.isReported(msg.address)) Text("مبلّغ", color = MaterialTheme.colorScheme.primary)
+                        }
                         Text(msg.body, maxLines = 3)
-                        if (msg.isSpam) Text("Spam", color = MaterialTheme.colorScheme.error)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            if (msg.isSpam) Text("Spam", color = MaterialTheme.colorScheme.error)
+                            Button(onClick = { vm.reportSpam(msg.address) }, enabled = !vm.isReported(msg.address)) { Text("إبلاغ Spam") }
+                        }
                     }
                 }
             }
