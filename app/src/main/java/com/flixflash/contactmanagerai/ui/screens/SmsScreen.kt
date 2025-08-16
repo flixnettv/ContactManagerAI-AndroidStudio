@@ -16,91 +16,100 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.flixflash.spamdetection.SpamMLEngine
+import com.flixflash.contactmanagerai.data.settings.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
 class SmsViewModel @Inject constructor(
-	private val spamEngine: SpamMLEngine
+    private val spamEngine: SpamMLEngine,
+    private val settings: SettingsRepository
 ) : ViewModel() {
-	var messages by mutableStateOf(listOf<SmsItem>())
-		private set
-	var hideSpam by mutableStateOf(true)
-	var loading by mutableStateOf(false)
+    var messages by mutableStateOf(listOf<SmsItem>())
+        private set
+    var hideSpam by mutableStateOf(true)
+    var loading by mutableStateOf(false)
+    var useBackend by mutableStateOf(true)
 
-	fun load(context: android.content.Context) {
-		viewModelScope.launch {
-			loading = true
-			val list = withContext(Dispatchers.IO) { readSms(context) }
-			val classified = list.map { item ->
-				viewModelScope.launch {
-					val res = spamEngine.classifyMessageWithFallback(item.body)
-					item.isSpam = res.first
-				}
-				item
-			}
-			messages = classified
-			loading = false
-		}
-	}
+    fun load(context: android.content.Context) {
+        viewModelScope.launch {
+            loading = true
+            useBackend = settings.settingsFlow.first().useBackendSpam
+            val list = withContext(Dispatchers.IO) { readSms(context) }
+            val classified = list.map { item ->
+                viewModelScope.launch {
+                    val res = if (useBackend) spamEngine.classifyMessageWithFallback(item.body)
+                    else spamEngine.classifyMessageLocal(item.body)
+                    item.isSpam = res.first
+                }
+                item
+            }
+            messages = classified
+            loading = false
+        }
+    }
 
-	private fun readSms(context: android.content.Context): List<SmsItem> {
-		val list = mutableListOf<SmsItem>()
-		val uri = Telephony.Sms.Inbox.CONTENT_URI
-		val projection = arrayOf(Telephony.Sms.ADDRESS, Telephony.Sms.BODY, Telephony.Sms.DATE)
-		context.contentResolver.query(uri, projection, null, null, Telephony.Sms.DEFAULT_SORT_ORDER)?.use { cursor ->
-			val idxAddr = cursor.getColumnIndexOrThrow(Telephony.Sms.ADDRESS)
-			val idxBody = cursor.getColumnIndexOrThrow(Telephony.Sms.BODY)
-			val idxDate = cursor.getColumnIndexOrThrow(Telephony.Sms.DATE)
-			while (cursor.moveToNext()) {
-				list.add(
-					SmsItem(
-						address = cursor.getString(idxAddr) ?: "",
-						body = cursor.getString(idxBody) ?: "",
-						date = cursor.getLong(idxDate)
-					)
-				)
-			}
-		}
-		return list
-	}
+    private fun readSms(context: android.content.Context): List<SmsItem> {
+        val list = mutableListOf<SmsItem>()
+        val uri = Telephony.Sms.Inbox.CONTENT_URI
+        val projection = arrayOf(Telephony.Sms.ADDRESS, Telephony.Sms.BODY, Telephony.Sms.DATE)
+        context.contentResolver.query(uri, projection, null, null, Telephony.Sms.DEFAULT_SORT_ORDER)?.use { cursor ->
+            val idxAddr = cursor.getColumnIndexOrThrow(Telephony.Sms.ADDRESS)
+            val idxBody = cursor.getColumnIndexOrThrow(Telephony.Sms.BODY)
+            val idxDate = cursor.getColumnIndexOrThrow(Telephony.Sms.DATE)
+            while (cursor.moveToNext()) {
+                list.add(
+                    SmsItem(
+                        address = cursor.getString(idxAddr) ?: "",
+                        body = cursor.getString(idxBody) ?: "",
+                        date = cursor.getLong(idxDate)
+                    )
+                )
+            }
+        }
+        return list
+    }
 }
 
 data class SmsItem(
-	val address: String,
-	val body: String,
-	val date: Long,
-	var isSpam: Boolean = false
+    val address: String,
+    val body: String,
+    val date: Long,
+    var isSpam: Boolean = false
 )
 
 @Composable
 fun SmsScreen() {
-	val vm: SmsViewModel = hiltViewModel()
-	val context = LocalContext.current
-	LaunchedEffect(Unit) {
-		if (ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED) {
-			vm.load(context)
-		}
-	}
-	Column(Modifier.fillMaxSize().padding(12.dp)) {
-		Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-			Text("إخفاء المزعج")
-			Switch(checked = vm.hideSpam, onCheckedChange = { vm.hideSpam = it })
-		}
-		if (vm.loading) LinearProgressIndicator(Modifier.fillMaxWidth())
-		LazyColumn(Modifier.fillMaxSize()) {
-			items(vm.messages.filter { if (vm.hideSpam) !it.isSpam else true }) { msg ->
-				Card(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-					Column(Modifier.padding(8.dp)) {
-						Text(msg.address, style = MaterialTheme.typography.titleSmall)
-						Text(msg.body, maxLines = 3)
-						if (msg.isSpam) Text("Spam", color = MaterialTheme.colorScheme.error)
-					}
-				}
-			}
-		}
-	}
+    val vm: SmsViewModel = hiltViewModel()
+    val context = LocalContext.current
+    LaunchedEffect(Unit) {
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED) {
+            vm.load(context)
+        }
+    }
+    Column(Modifier.fillMaxSize().padding(12.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("إخفاء المزعج")
+            Switch(checked = vm.hideSpam, onCheckedChange = { vm.hideSpam = it })
+            Spacer(Modifier.width(8.dp))
+            Text("AI")
+            Switch(checked = vm.useBackend, onCheckedChange = { vm.useBackend = it; vm.load(context) })
+        }
+        if (vm.loading) LinearProgressIndicator(Modifier.fillMaxWidth())
+        LazyColumn(Modifier.fillMaxSize()) {
+            items(vm.messages.filter { if (vm.hideSpam) !it.isSpam else true }) { msg ->
+                Card(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                    Column(Modifier.padding(8.dp)) {
+                        Text(msg.address, style = MaterialTheme.typography.titleSmall)
+                        Text(msg.body, maxLines = 3)
+                        if (msg.isSpam) Text("Spam", color = MaterialTheme.colorScheme.error)
+                    }
+                }
+            }
+        }
+    }
 }
