@@ -152,7 +152,7 @@ fun MainAppContent() {
                     com.flixflash.contactmanagerai.ui.screens.SmsScreen()
                 }
                 composable("ai_assistant") {
-                    AIAssistantScreen()
+                    com.flixflash.contactmanagerai.ui.screens.AiCallScreen()
                 }
                 composable("settings") {
                     SettingsScreen(navController)

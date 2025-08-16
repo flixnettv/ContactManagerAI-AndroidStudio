@@ -3,6 +3,7 @@ package com.flixflash.contactmanagerai.di
 import com.flixflash.contactmanager.BuildConfig
 import com.flixflash.contactmanagerai.data.network.CallerIdApi
 import com.flixflash.contactmanagerai.data.network.SpamApi
+import com.flixflash.contactmanagerai.data.network.RasaApi
 import com.flixflash.contactmanagerai.data.settings.SettingsRepository
 import dagger.Module
 import dagger.Provides
@@ -57,4 +58,27 @@ object NetworkModule {
 
 	@Provides @Singleton
 	fun provideSpamApi(retrofit: Retrofit): SpamApi = retrofit.create(SpamApi::class.java)
+
+	@Provides @Singleton
+	fun provideRasaRetrofit(settings: SettingsRepository, baseClient: OkHttpClient): Retrofit {
+		val current = runBlocking { settings.settingsFlow.first() }
+		val base = current.rasaUrl.ifBlank { BuildConfig.RASA_BASE_URL }
+		val client = baseClient.newBuilder()
+			.addInterceptor { chain ->
+				val original = chain.request()
+				val url = original.url
+				val parsed = HttpUrl.parse(base)!!
+				val newUrl = url.newBuilder().scheme(parsed.scheme()).host(parsed.host()).port(parsed.port()).build()
+				chain.proceed(original.newBuilder().url(newUrl).build())
+			}
+			.build()
+		return Retrofit.Builder()
+			.baseUrl(base)
+			.client(client)
+			.addConverterFactory(MoshiConverterFactory.create())
+			.build()
+	}
+
+	@Provides @Singleton
+	fun provideRasaApi(rasaRetrofit: Retrofit): RasaApi = rasaRetrofit.create(RasaApi::class.java)
 }
