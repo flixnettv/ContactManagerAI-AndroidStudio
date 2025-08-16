@@ -13,6 +13,7 @@ import com.flixflash.contactmanagerai.data.repository.AiCallRepository
 import com.flixflash.contactmanagerai.data.voice.AiConversationManager
 import com.flixflash.contactmanagerai.data.voice.AudioPlayerHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -29,10 +30,9 @@ class AiCallViewModel @Inject constructor(
     var liveTranscripts by mutableStateOf(listOf<String>())
         private set
 
+    val audioOut: SharedFlow<ByteArray> = conv.audioOut
+
     init {
-        viewModelScope.launch {
-            conv.audioOut.collectLatest { /* handled in UI via AudioPlayerHelper */ }
-        }
         viewModelScope.launch {
             conv.transcripts.collectLatest { t -> liveTranscripts = liveTranscripts + t }
         }
@@ -61,11 +61,10 @@ fun AiCallScreen() {
     var phone by remember { mutableStateOf("") }
     var reason by remember { mutableStateOf("") }
 
-    // Audio collector
+    // Auto-play Piper audio from live conversation
     LaunchedEffect(Unit) {
-        vm.startLive() // optional auto-start; remove if not desired
+        vm.audioOut.collectLatest { bytes -> AudioPlayerHelper.playWav(ctx, bytes) }
     }
-    // NOTE: audioOut consumed in VM; playback handled by UI on demand (TTS preview)
 
     Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("مكالمة AI", style = MaterialTheme.typography.titleLarge)
