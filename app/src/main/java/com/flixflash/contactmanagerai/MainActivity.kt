@@ -152,7 +152,7 @@ fun MainAppContent() {
                     AIAssistantScreen()
                 }
                 composable("settings") {
-                    SettingsScreen()
+                    SettingsScreen(navController)
                 }
                 composable("add_contact") {
                     AddContactScreen(navController)
@@ -601,12 +601,17 @@ fun AIAssistantScreen() {
 }
 
 @Composable
-fun SettingsScreen() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+fun SettingsScreen(navController: NavHostController) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text("شاشة الإعدادات - قيد التطوير")
+        Text("الإعدادات", style = MaterialTheme.typography.titleLarge)
+        Divider()
+        Button(onClick = { /* TODO: إعدادات التطبيق */ }) { Text("تفضيلات عامة") }
+        Button(onClick = { navController.navigate("caller_id") }) { Text("Caller ID") }
     }
 }
 
