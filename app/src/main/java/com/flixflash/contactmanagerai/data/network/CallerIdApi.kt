@@ -13,6 +13,9 @@ data class NumberInfo(
 data class SpamReportReq(val number: String, val reason: String)
 
 interface CallerIdApi {
+	@GET("/health")
+	suspend fun health(): Map<String, Any>
+
 	@GET("/lookup/{number}")
 	suspend fun lookup(@Path("number") number: String): NumberInfo
 
