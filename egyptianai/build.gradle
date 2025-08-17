@@ -22,8 +22,8 @@ android {
         buildConfigField "boolean", "FLIXFLASH_COMEDY_VOICE", "true"
         buildConfigField "String", "FLIXFLASH_LOCALE", "\"ar-EG\""
         
-        // Egyptian AI Voice Types
-        buildConfigField "String[]", "FLIXFLASH_VOICE_TYPES", "new String[]{\"young_male\", \"young_female\", \"elderly_male\", \"elderly_female\", \"child_male\", \"child_female\", \"deep_scary\", \"funny_comedian\"}"
+        // Egyptian AI Voice Types (store as CSV; arrays are not supported in BuildConfig)
+        buildConfigField "String", "FLIXFLASH_VOICE_TYPES_CSV", "\"young_male,young_female,elderly_male,elderly_female,child_male,child_female,deep_scary,funny_comedian\""
     }
 
     buildTypes {
@@ -38,12 +38,12 @@ android {
     }
     
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
     
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '17'
     }
     
     buildFeatures {

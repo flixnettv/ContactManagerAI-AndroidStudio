@@ -11,6 +11,9 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      USE_EXPERIMENTAL_LIBS: "false"
+      INCLUDE_LOCAL_JARS: "false"
     steps:
       - uses: actions/checkout@v4
         with:
@@ -19,15 +22,32 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-      - uses: gradle/gradle-build-action@v2
       - uses: android-actions/setup-android@v3
+      - name: Accept SDK licenses and install components
+        run: |
+          yes | sdkmanager --licenses > /dev/null
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+      - uses: gradle/gradle-build-action@v2
       - name: Ensure Gradle wrapper
         run: |
-          test -f gradle/wrapper/gradle-wrapper.jar || curl -sSL https://raw.githubusercontent.com/gradle/gradle/v8.1.1/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
+          test -f gradle/wrapper/gradle-wrapper.jar || curl -sSL https://raw.githubusercontent.com/gradle/gradle/v8.4/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
       - name: Grant execute
         run: chmod +x gradlew
       - name: Assemble Debug
-        run: ./gradlew assembleDebug --stacktrace
+        run: |
+          set -o pipefail
+          ./gradlew --no-daemon --version 2>&1 | tee -a gradle-build.log
+          ./gradlew --no-daemon tasks --all 2>&1 | tee -a gradle-build.log
+          ./gradlew --no-daemon --stacktrace --warning-mode all --info :app:assembleDebug 2>&1 | tee -a gradle-build.log
+      - name: Upload Build Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: |
+            gradle-build.log
+            **/build/reports/**
+            **/outputs/logs/**
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
