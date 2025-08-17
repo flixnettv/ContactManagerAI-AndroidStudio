@@ -30,7 +30,8 @@ jobs:
       - uses: gradle/gradle-build-action@v2
       - name: Ensure Gradle wrapper
         run: |
-          test -f gradle/wrapper/gradle-wrapper.jar || curl -sSL https://raw.githubusercontent.com/gradle/gradle/v8.4/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
+          test -f gradle/wrapper/gradle-wrapper.jar || curl -sSL https://raw.githubusercontent.com/gradle/gradle/v8.4/subprojects/wrapper/src/main/resources/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
+          ls -lh gradle/wrapper
       - name: Grant execute
         run: chmod +x gradlew
       - name: Assemble Debug
@@ -48,6 +49,12 @@ jobs:
             gradle-build.log
             **/build/reports/**
             **/outputs/logs/**
+      - name: Print Gradle Log on Failure
+        if: failure()
+        run: |
+          echo '----- BEGIN gradle-build.log -----'
+          sed -n '1,400p' gradle-build.log || true
+          echo '----- END gradle-build.log -----'
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
