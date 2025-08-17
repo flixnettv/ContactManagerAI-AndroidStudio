@@ -221,53 +221,61 @@ dependencies {
 
     // ==================== AUDIO & SPEECH ====================
     implementation 'androidx.media:media:1.7.0'
-    implementation 'com.github.adrielcafe:voyager:1.0.0'
-    implementation 'androidx.speech:speech:1.0.0-alpha01'
+    def useExperimentalLibs = (System.getenv("USE_EXPERIMENTAL_LIBS") ?: project.findProperty("useExperimentalLibs") ?: "false").toBoolean()
+    if (useExperimentalLibs) {
+        implementation 'com.github.adrielcafe:voyager:1.0.0'
+        implementation 'androidx.speech:speech:1.0.0-alpha01'
+    }
 
     // ==================== CONTACT MANAGEMENT ====================
-    implementation 'androidx.core:core-telecom:1.0.0-alpha02'
+    if (useExperimentalLibs) {
+        implementation 'androidx.core:core-telecom:1.0.0-alpha02'
+    }
 
-    // ==================== EGYPTIAN AI PLUGINS ====================
-    implementation files('libs/advanced-ai-voice-recognition-1.0.0.jar')
-    implementation files('libs/voice-personality-engine-1.0.0.jar')
-    implementation files('libs/smart-response-generator-1.0.0.jar')
-    implementation files('libs/advanced-spam-shield-1.0.0.jar')
-    implementation files('libs/call-encryption-pro-1.0.0.jar')
-    implementation files('libs/privacy-analytics-1.0.0.jar')
-    implementation files('libs/smart-call-scheduler-1.0.0.jar')
-    implementation files('libs/call-analytics-pro-1.0.0.jar')
-    implementation files('libs/voice-memo-plus-1.0.0.jar')
-    implementation files('libs/social-media-bridge-1.0.0.jar')
-    implementation files('libs/cloud-sync-pro-1.0.0.jar')
-    implementation files('libs/multi-language-support-1.0.0.jar')
-    implementation files('libs/premium-themes-pack-1.0.0.jar')
-    implementation files('libs/dynamic-wallpapers-1.0.0.jar')
-    implementation files('libs/custom-ringtones-pro-1.0.0.jar')
-    implementation files('libs/business-call-agent-1.0.0.jar')
-    implementation files('libs/customer-service-agent-1.0.0.jar')
-    implementation files('libs/sales-assistant-agent-1.0.0.jar')
-    implementation files('libs/family-assistant-agent-1.0.0.jar')
-    implementation files('libs/kitchen-helper-agent-1.0.0.jar')
-    implementation files('libs/home-security-agent-1.0.0.jar')
-    implementation files('libs/educational-agent-1.0.0.jar')
-    implementation files('libs/arabic-language-agent-1.0.0.jar')
-    implementation files('libs/islamic-knowledge-agent-1.0.0.jar')
-    implementation files('libs/comedy-agent-1.0.0.jar')
-    implementation files('libs/music-agent-1.0.0.jar')
-    implementation files('libs/sports-agent-1.0.0.jar')
-    implementation files('libs/health-assistant-agent-1.0.0.jar')
-    implementation files('libs/mental-health-agent-1.0.0.jar')
-    implementation files('libs/financial-advisor-agent-1.0.0.jar')
-    implementation files('libs/shopping-assistant-agent-1.0.0.jar')
-    implementation files('libs/travel-guide-agent-1.0.0.jar')
-    implementation files('libs/egyptian-heritage-agent-1.0.0.jar')
-    implementation files('libs/transportation-agent-1.0.0.jar')
-    implementation files('libs/legal-advisor-agent-1.0.0.jar')
-    implementation files('libs/creative-agent-1.0.0.jar')
-    implementation files('libs/technical-support-agent-1.0.0.jar')
-    implementation files('libs/news-agent-1.0.0.jar')
-    implementation files('libs/weather-agent-1.0.0.jar')
-    implementation files('libs/gaming-agent-1.0.0.jar')
+    // ==================== EGYPTIAN AI PLUGINS (optional local jars) ====================
+    def includeLocalJars = (System.getenv("INCLUDE_LOCAL_JARS") ?: project.findProperty("includeLocalJars") ?: "false").toBoolean()
+    if (includeLocalJars) {
+        implementation files('libs/advanced-ai-voice-recognition-1.0.0.jar')
+        implementation files('libs/voice-personality-engine-1.0.0.jar')
+        implementation files('libs/smart-response-generator-1.0.0.jar')
+        implementation files('libs/advanced-spam-shield-1.0.0.jar')
+        implementation files('libs/call-encryption-pro-1.0.0.jar')
+        implementation files('libs/privacy-analytics-1.0.0.jar')
+        implementation files('libs/smart-call-scheduler-1.0.0.jar')
+        implementation files('libs/call-analytics-pro-1.0.0.jar')
+        implementation files('libs/voice-memo-plus-1.0.0.jar')
+        implementation files('libs/social-media-bridge-1.0.0.jar')
+        implementation files('libs/cloud-sync-pro-1.0.0.jar')
+        implementation files('libs/multi-language-support-1.0.0.jar')
+        implementation files('libs/premium-themes-pack-1.0.0.jar')
+        implementation files('libs/dynamic-wallpapers-1.0.0.jar')
+        implementation files('libs/custom-ringtones-pro-1.0.0.jar')
+        implementation files('libs/business-call-agent-1.0.0.jar')
+        implementation files('libs/customer-service-agent-1.0.0.jar')
+        implementation files('libs/sales-assistant-agent-1.0.0.jar')
+        implementation files('libs/family-assistant-agent-1.0.0.jar')
+        implementation files('libs/kitchen-helper-agent-1.0.0.jar')
+        implementation files('libs/home-security-agent-1.0.0.jar')
+        implementation files('libs/educational-agent-1.0.0.jar')
+        implementation files('libs/arabic-language-agent-1.0.0.jar')
+        implementation files('libs/islamic-knowledge-agent-1.0.0.jar')
+        implementation files('libs/comedy-agent-1.0.0.jar')
+        implementation files('libs/music-agent-1.0.0.jar')
+        implementation files('libs/sports-agent-1.0.0.jar')
+        implementation files('libs/health-assistant-agent-1.0.0.jar')
+        implementation files('libs/mental-health-agent-1.0.0.jar')
+        implementation files('libs/financial-advisor-agent-1.0.0.jar')
+        implementation files('libs/shopping-assistant-1.0.0.jar')
+        implementation files('libs/travel-guide-agent-1.0.0.jar')
+        implementation files('libs/egyptian-heritage-agent-1.0.0.jar')
+        implementation files('libs/transportation-agent-1.0.0.jar')
+        implementation files('libs/legal-advisor-agent-1.0.0.jar')
+        implementation files('libs/creative-agent-1.0.0.jar')
+        implementation files('libs/technical-support-agent-1.0.0.jar')
+        implementation files('libs/news-agent-1.0.0.jar')
+        implementation files('libs/weather-agent-1.0.0.jar')
+        implementation files('libs/gaming-agent-1.0.0.jar')
+    }
 
     // ==================== ADDITIONAL UTILITIES ====================
     implementation 'com.jakewharton.threetenabp:threetenabp:1.4.6'

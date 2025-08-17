@@ -11,6 +11,9 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      USE_EXPERIMENTAL_LIBS: "false"
+      INCLUDE_LOCAL_JARS: "false"
     steps:
       - uses: actions/checkout@v4
         with:
