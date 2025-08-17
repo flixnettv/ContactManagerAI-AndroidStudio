@@ -1,5 +1,4 @@
-name: android-ci-min
-
+name: android-ci
 on:
   push:
     branches: [ main ]
@@ -10,7 +9,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  build-apk:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -29,8 +28,8 @@ jobs:
         run: chmod +x gradlew
       - name: Assemble Debug
         run: ./gradlew assembleDebug --stacktrace
-      - name: Upload artifact
-        uses: actions/upload-artifact@v3
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
         with:
           name: debug-apk
           path: |
@@ -39,37 +38,45 @@ jobs:
 
   deliver:
     runs-on: ubuntu-latest
-    needs: build-apk
+    needs: build
+    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Download APK
+      - name: Download debug APK
         uses: actions/download-artifact@v4
         with:
           name: debug-apk
           path: _apk
-      - name: Copy to final_apk_delivery
+      - name: Prepare delivery folder
         run: |
           mkdir -p final_apk_delivery
           find _apk -type f -name "*.apk" -exec cp -f {} final_apk_delivery/ \;
-      - name: Commit
+      - name: Commit changes
         id: commit
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add final_apk_delivery/*.apk || true
-          if git commit -m "chore: deliver debug APK"; then
+          if git commit -m "chore: deliver latest debug APK(s)"; then
             echo "committed=1" >> $GITHUB_OUTPUT
           else
             echo "committed=0" >> $GITHUB_OUTPUT
           fi
-      - name: Push or PR fallback
+      - name: Push changes
+        id: push
         run: |
           if [ "${{ steps.commit.outputs.committed }}" = "1" ]; then
-            git push || (
-              gh pr create --title "Deliver debug APK" --body "Deliver APK into final_apk_delivery" --base main --head $GITHUB_REF_NAME || true
-            )
+            git push || echo "push_failed=1" >> $GITHUB_OUTPUT
+          else
+            echo "push_failed=0" >> $GITHUB_OUTPUT
           fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: PR fallback
+        if: ${{ steps.push.outputs.push_failed == '1' }}
+        uses: peter-evans/create-pull-request@v5
+        with:
+          commit-message: "chore: deliver latest debug APK(s) to final_apk_delivery"
+          branch: ci/apk-delivery
+          title: "Deliver latest debug APK(s)"
+          body: "This PR delivers the latest debug APK(s) into final_apk_delivery."
