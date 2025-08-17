@@ -6,12 +6,19 @@ buildscript {
         compose_compiler_version = '1.5.4'
         accompanist_version = '0.32.0'
     }
-    
+    repositories {
+        google()
+        mavenCentral()
+        maven { url "https://maven.google.com" }
+        maven { url "https://jitpack.io" }
+    }
     dependencies {
         classpath 'com.android.tools.build:gradle:8.1.2'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath 'com.google.gms:google-services:4.4.0'
         classpath 'com.google.firebase:firebase-crashlytics-gradle:2.9.9'
+        classpath 'androidx.navigation:navigation-safe-args-gradle-plugin:2.7.6'
+        classpath 'com.google.dagger:hilt-android-gradle-plugin:2.48.1'
     }
 }
 

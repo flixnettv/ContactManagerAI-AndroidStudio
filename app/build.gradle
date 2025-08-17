@@ -82,6 +82,10 @@ android {
         jvmTarget = '1.8'
     }
 
+    kapt {
+        correctErrorTypes = true
+    }
+
     buildFeatures {
         compose true
         buildConfig true
