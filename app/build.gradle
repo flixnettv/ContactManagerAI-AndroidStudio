@@ -8,7 +8,7 @@ plugins {
 }
 
 android {
-    namespace 'com.flixflash.contactmanager'
+    namespace 'com.flixflash.contactmanagerai'
     compileSdk 34
 
     def hasKeystore = System.getenv("KEYSTORE_PASSWORD") != null && System.getenv("KEY_ALIAS") != null
@@ -28,7 +28,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.flixflash.contactmanager"
+        applicationId "com.flixflash.contactmanagerai"
         minSdk 26
         targetSdk 34
         versionCode 1
