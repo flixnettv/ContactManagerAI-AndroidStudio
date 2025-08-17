@@ -28,18 +28,20 @@ jobs:
           yes | sdkmanager --licenses > /dev/null
           sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
       - uses: gradle/gradle-build-action@v2
-      - name: Ensure Gradle wrapper
+      - name: Install Gradle 8.4
         run: |
-          test -f gradle/wrapper/gradle-wrapper.jar || curl -sSL https://raw.githubusercontent.com/gradle/gradle/v8.4/subprojects/wrapper/src/main/resources/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
-          ls -lh gradle/wrapper
-      - name: Grant execute
-        run: chmod +x gradlew
+          set -e
+          GRADLE_VERSION=8.4
+          curl -sSL https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip -o gradle.zip
+          unzip -q gradle.zip -d $HOME
+          echo "$HOME/gradle-${GRADLE_VERSION}/bin" >> $GITHUB_PATH
+          gradle --version
       - name: Assemble Debug
         run: |
           set -o pipefail
-          ./gradlew --no-daemon --version 2>&1 | tee -a gradle-build.log
-          ./gradlew --no-daemon tasks --all 2>&1 | tee -a gradle-build.log
-          ./gradlew --no-daemon --stacktrace --warning-mode all --info :app:assembleDebug 2>&1 | tee -a gradle-build.log
+          gradle --no-daemon --version 2>&1 | tee -a gradle-build.log
+          gradle --no-daemon tasks --all 2>&1 | tee -a gradle-build.log
+          gradle --no-daemon --stacktrace --warning-mode all --info :app:assembleDebug 2>&1 | tee -a gradle-build.log
       - name: Upload Build Logs
         if: always()
         uses: actions/upload-artifact@v4
