@@ -36,7 +36,9 @@ jobs:
       - name: Assemble Debug
         run: |
           set -o pipefail
-          ./gradlew --no-daemon --stacktrace assembleDebug 2>&1 | tee gradle-build.log
+          ./gradlew --no-daemon --version 2>&1 | tee -a gradle-build.log
+          ./gradlew --no-daemon tasks --all 2>&1 | tee -a gradle-build.log
+          ./gradlew --no-daemon --stacktrace --warning-mode all --info :app:assembleDebug 2>&1 | tee -a gradle-build.log
       - name: Upload Build Logs
         if: always()
         uses: actions/upload-artifact@v4
