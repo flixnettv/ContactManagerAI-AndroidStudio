@@ -30,11 +30,22 @@ jobs:
       - uses: gradle/gradle-build-action@v2
       - name: Ensure Gradle wrapper
         run: |
-          test -f gradle/wrapper/gradle-wrapper.jar || curl -sSL https://raw.githubusercontent.com/gradle/gradle/v8.1.1/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
+          test -f gradle/wrapper/gradle-wrapper.jar || curl -sSL https://raw.githubusercontent.com/gradle/gradle/v8.4/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
       - name: Grant execute
         run: chmod +x gradlew
       - name: Assemble Debug
-        run: ./gradlew assembleDebug --stacktrace
+        run: |
+          set -o pipefail
+          ./gradlew --no-daemon --stacktrace assembleDebug 2>&1 | tee gradle-build.log
+      - name: Upload Build Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: |
+            gradle-build.log
+            **/build/reports/**
+            **/outputs/logs/**
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
