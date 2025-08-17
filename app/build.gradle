@@ -2,17 +2,33 @@ plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
     id 'kotlin-kapt'
-    id 'dagger.hilt.android.plugin'
     id 'kotlin-parcelize'
-    id 'androidx.navigation.safeargs.kotlin'
 }
+apply plugin: 'dagger.hilt.android.plugin'
+apply plugin: 'androidx.navigation.safeargs.kotlin'
 
 android {
-    namespace 'com.flixflash.contactmanager'
+    namespace 'com.flixflash.contactmanagerai'
     compileSdk 34
 
+    def hasKeystore = System.getenv("KEYSTORE_PASSWORD") != null && System.getenv("KEY_ALIAS") != null
+
+    signingConfigs {
+        debug {
+            // default debug
+        }
+        if (hasKeystore) {
+            release {
+                storeFile file("keystore.jks")
+                storePassword System.getenv("KEYSTORE_PASSWORD")
+                keyAlias System.getenv("KEY_ALIAS")
+                keyPassword System.getenv("KEY_PASSWORD")
+            }
+        }
+    }
+
     defaultConfig {
-        applicationId "com.flixflash.contactmanager"
+        applicationId "com.flixflash.contactmanagerai"
         minSdk 26
         targetSdk 34
         versionCode 1
@@ -28,6 +44,17 @@ android {
         buildConfigField "boolean", "ENABLE_AI_AGENTS", "true"
         buildConfigField "String", "PLUGINS_VERSION", "\"1.0.0\""
         buildConfigField "String", "AGENTS_VERSION", "\"1.0.0\""
+
+        // Backend endpoints (override via Gradle properties or env if needed)
+        buildConfigField "String", "CALLERID_BASE_URL", "\"http://10.0.2.2:8000\""
+        buildConfigField "String", "RASA_BASE_URL", "\"http://10.0.2.2:5005\""
+        buildConfigField "String", "PIPER_BASE_URL", "\"http://10.0.2.2:59125\""
+        buildConfigField "String", "VOSK_WS_URL", "\"ws://10.0.2.2:2700\""
+
+        // Manifest placeholders
+        manifestPlaceholders = [
+            app_name: "Contact Manager AI"
+        ]
     }
 
     buildTypes {
@@ -37,22 +64,27 @@ android {
             applicationIdSuffix ".debug"
             versionNameSuffix "-debug"
             buildConfigField "boolean", "DEBUG_MODE", "true"
+            signingConfig signingConfigs.debug
         }
         release {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             buildConfigField "boolean", "DEBUG_MODE", "false"
-            signingConfig signingConfigs.debug
+            if (hasKeystore) {
+                signingConfig signingConfigs.release
+            } else {
+                signingConfig signingConfigs.debug
+            }
         }
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '17'
     }
 
     buildFeatures {
@@ -63,7 +95,7 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion '1.5.8'
+        kotlinCompilerExtensionVersion rootProject.ext.compose_compiler_version
     }
 
     packagingOptions {
@@ -74,6 +106,16 @@ android {
             excludes += '/META-INF/LICENSE.txt'
             excludes += '/META-INF/NOTICE'
             excludes += '/META-INF/NOTICE.txt'
+        }
+    }
+
+    // Ensure per-ABI APK outputs alongside a universal APK
+    splits {
+        abi {
+            enable true
+            reset()
+            include 'arm64-v8a', 'armeabi-v7a', 'x86_64'
+            universalApk true
         }
     }
 }
@@ -134,6 +176,11 @@ dependencies {
     implementation 'com.squareup.moshi:moshi-kotlin:1.15.0'
     kapt 'com.squareup.moshi:moshi-kotlin-codegen:1.15.0'
 
+    // ==================== RETROFIT CONVERTERS ====================
+    implementation 'com.squareup.retrofit2:converter-moshi:2.9.0'
+    implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+    implementation 'com.squareup.okhttp3:logging-interceptor:4.12.0'
+
     // ==================== COROUTINES ====================
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3'
@@ -165,7 +212,6 @@ dependencies {
     implementation 'androidx.media3:media3-ui:1.2.1'
 
     // ==================== AI & MACHINE LEARNING ====================
-    // TensorFlow Lite for AI/ML
     implementation 'org.tensorflow:tensorflow-lite:2.14.0'
     implementation 'org.tensorflow:tensorflow-lite-support:0.4.4'
     implementation 'org.tensorflow:tensorflow-lite-metadata:0.4.4'
@@ -173,116 +219,78 @@ dependencies {
     implementation 'org.tensorflow:tensorflow-lite-task-audio:0.4.4'
     implementation 'org.tensorflow:tensorflow-lite-gpu:2.14.0'
 
-    // ML Kit for Google AI Services
     implementation 'com.google.mlkit:text-recognition:16.0.0'
     implementation 'com.google.mlkit:language-id:17.0.4'
     implementation 'com.google.mlkit:translate:17.0.2'
     implementation 'com.google.mlkit:smart-reply:17.0.3'
 
     // ==================== AUDIO & SPEECH ====================
-    // Audio processing and recording
     implementation 'androidx.media:media:1.7.0'
-    implementation 'com.github.adrielcafe:voyager:1.0.0'
-    
-    // Text-to-Speech and Speech-to-Text
-    implementation 'androidx.speech:speech:1.0.0-alpha01'
+    def useExperimentalLibs = (System.getenv("USE_EXPERIMENTAL_LIBS") ?: project.findProperty("useExperimentalLibs") ?: "false").toBoolean()
+    if (useExperimentalLibs) {
+        implementation 'com.github.adrielcafe:voyager:1.0.0'
+        implementation 'androidx.speech:speech:1.0.0-alpha01'
+    }
 
     // ==================== CONTACT MANAGEMENT ====================
-    // Contact provider and telephony
-    implementation 'androidx.core:core-telecom:1.0.0-alpha02'
-    
-    // ==================== EGYPTIAN AI PLUGINS ====================
-    // 🤖 AI Voice Recognition Plugin
-    implementation files('libs/advanced-ai-voice-recognition-1.0.0.jar')
-    implementation files('libs/voice-personality-engine-1.0.0.jar')
-    implementation files('libs/smart-response-generator-1.0.0.jar')
-    
-    // 🛡️ Security & Spam Protection Plugins
-    implementation files('libs/advanced-spam-shield-1.0.0.jar')
-    implementation files('libs/call-encryption-pro-1.0.0.jar')
-    implementation files('libs/privacy-analytics-1.0.0.jar')
-    
-    // 📞 Call Management Plugins
-    implementation files('libs/smart-call-scheduler-1.0.0.jar')
-    implementation files('libs/call-analytics-pro-1.0.0.jar')
-    implementation files('libs/voice-memo-plus-1.0.0.jar')
-    
-    // 🌐 Integration & Connectivity Plugins
-    implementation files('libs/social-media-bridge-1.0.0.jar')
-    implementation files('libs/cloud-sync-pro-1.0.0.jar')
-    implementation files('libs/multi-language-support-1.0.0.jar')
-    
-    // 🎨 UI & Design Plugins
-    implementation files('libs/premium-themes-pack-1.0.0.jar')
-    implementation files('libs/dynamic-wallpapers-1.0.0.jar')
-    implementation files('libs/custom-ringtones-pro-1.0.0.jar')
+    if (useExperimentalLibs) {
+        implementation 'androidx.core:core-telecom:1.0.0-alpha02'
+    }
 
-    // ==================== FREE AI AGENTS ====================
-    // 👨‍💼 Business & Office Agents
-    implementation files('libs/business-call-agent-1.0.0.jar')
-    implementation files('libs/customer-service-agent-1.0.0.jar')
-    implementation files('libs/sales-assistant-agent-1.0.0.jar')
-    
-    // 🏠 Home & Family Agents
-    implementation files('libs/family-assistant-agent-1.0.0.jar')
-    implementation files('libs/kitchen-helper-agent-1.0.0.jar')
-    implementation files('libs/home-security-agent-1.0.0.jar')
-    
-    // 🎓 Education & Culture Agents
-    implementation files('libs/educational-agent-1.0.0.jar')
-    implementation files('libs/arabic-language-agent-1.0.0.jar')
-    implementation files('libs/islamic-knowledge-agent-1.0.0.jar')
-    
-    // 🎉 Entertainment & Fun Agents
-    implementation files('libs/comedy-agent-1.0.0.jar')
-    implementation files('libs/music-agent-1.0.0.jar')
-    implementation files('libs/sports-agent-1.0.0.jar')
-    
-    // 🏥 Health & Medical Agents
-    implementation files('libs/health-assistant-agent-1.0.0.jar')
-    implementation files('libs/mental-health-agent-1.0.0.jar')
-    
-    // 💰 Finance & Business Agents
-    implementation files('libs/financial-advisor-agent-1.0.0.jar')
-    implementation files('libs/shopping-assistant-agent-1.0.0.jar')
-    
-    // 🌍 Travel & Tourism Agents
-    implementation files('libs/travel-guide-agent-1.0.0.jar')
-    implementation files('libs/egyptian-heritage-agent-1.0.0.jar')
-    
-    // Specialized Agents
-    implementation files('libs/transportation-agent-1.0.0.jar')
-    implementation files('libs/legal-advisor-agent-1.0.0.jar')
-    implementation files('libs/creative-agent-1.0.0.jar')
-    implementation files('libs/technical-support-agent-1.0.0.jar')
-    implementation files('libs/news-agent-1.0.0.jar')
-    implementation files('libs/weather-agent-1.0.0.jar')
-    implementation files('libs/gaming-agent-1.0.0.jar')
+    // ==================== EGYPTIAN AI PLUGINS (optional local jars) ====================
+    def includeLocalJars = (System.getenv("INCLUDE_LOCAL_JARS") ?: project.findProperty("includeLocalJars") ?: "false").toBoolean()
+    if (includeLocalJars) {
+        implementation files('libs/advanced-ai-voice-recognition-1.0.0.jar')
+        implementation files('libs/voice-personality-engine-1.0.0.jar')
+        implementation files('libs/smart-response-generator-1.0.0.jar')
+        implementation files('libs/advanced-spam-shield-1.0.0.jar')
+        implementation files('libs/call-encryption-pro-1.0.0.jar')
+        implementation files('libs/privacy-analytics-1.0.0.jar')
+        implementation files('libs/smart-call-scheduler-1.0.0.jar')
+        implementation files('libs/call-analytics-pro-1.0.0.jar')
+        implementation files('libs/voice-memo-plus-1.0.0.jar')
+        implementation files('libs/social-media-bridge-1.0.0.jar')
+        implementation files('libs/cloud-sync-pro-1.0.0.jar')
+        implementation files('libs/multi-language-support-1.0.0.jar')
+        implementation files('libs/premium-themes-pack-1.0.0.jar')
+        implementation files('libs/dynamic-wallpapers-1.0.0.jar')
+        implementation files('libs/custom-ringtones-pro-1.0.0.jar')
+        implementation files('libs/business-call-agent-1.0.0.jar')
+        implementation files('libs/customer-service-agent-1.0.0.jar')
+        implementation files('libs/sales-assistant-agent-1.0.0.jar')
+        implementation files('libs/family-assistant-agent-1.0.0.jar')
+        implementation files('libs/kitchen-helper-agent-1.0.0.jar')
+        implementation files('libs/home-security-agent-1.0.0.jar')
+        implementation files('libs/educational-agent-1.0.0.jar')
+        implementation files('libs/arabic-language-agent-1.0.0.jar')
+        implementation files('libs/islamic-knowledge-agent-1.0.0.jar')
+        implementation files('libs/comedy-agent-1.0.0.jar')
+        implementation files('libs/music-agent-1.0.0.jar')
+        implementation files('libs/sports-agent-1.0.0.jar')
+        implementation files('libs/health-assistant-agent-1.0.0.jar')
+        implementation files('libs/mental-health-agent-1.0.0.jar')
+        implementation files('libs/financial-advisor-agent-1.0.0.jar')
+        implementation files('libs/shopping-assistant-1.0.0.jar')
+        implementation files('libs/travel-guide-agent-1.0.0.jar')
+        implementation files('libs/egyptian-heritage-agent-1.0.0.jar')
+        implementation files('libs/transportation-agent-1.0.0.jar')
+        implementation files('libs/legal-advisor-agent-1.0.0.jar')
+        implementation files('libs/creative-agent-1.0.0.jar')
+        implementation files('libs/technical-support-agent-1.0.0.jar')
+        implementation files('libs/news-agent-1.0.0.jar')
+        implementation files('libs/weather-agent-1.0.0.jar')
+        implementation files('libs/gaming-agent-1.0.0.jar')
+    }
 
     // ==================== ADDITIONAL UTILITIES ====================
-    // Date and time utilities
     implementation 'com.jakewharton.threetenabp:threetenabp:1.4.6'
-    
-    // Logging
     implementation 'com.jakewharton.timber:timber:5.0.1'
-    
-    // Security and encryption
     implementation 'androidx.security:security-crypto:1.1.0-alpha06'
-    
-    // Biometric authentication
     implementation 'androidx.biometric:biometric:1.1.0'
-    
-    // In-app billing
     implementation 'com.android.billingclient:billing-ktx:6.1.0'
-    
-    // Analytics
     implementation 'com.google.firebase:firebase-analytics-ktx:21.5.0'
     implementation 'com.google.firebase:firebase-crashlytics-ktx:18.6.1'
-    
-    // Performance monitoring
     implementation 'com.google.firebase:firebase-perf-ktx:20.5.1'
-    
-    // Remote config
     implementation 'com.google.firebase:firebase-config-ktx:21.6.0'
 
     // ==================== TESTING ====================
@@ -293,6 +301,7 @@ dependencies {
     testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3'
     testImplementation 'androidx.room:room-testing:2.6.1'
     testImplementation 'com.google.truth:truth:1.1.4'
+    testImplementation 'com.squareup.okhttp3:mockwebserver:4.12.0'
 
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'

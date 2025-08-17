@@ -156,13 +156,13 @@
         <!-- Content Provider for contacts -->
         <provider
             android:name=".providers.FlixFlashContactProvider"
-            android:authorities="com.flixflash.contactmanagerai.contacts"
+            android:authorities="${applicationId}.contacts"
             android:exported="false" />
 
         <!-- Work Manager for background tasks -->
         <provider
             android:name="androidx.startup.InitializationProvider"
-            android:authorities="com.flixflash.contactmanagerai.androidx-startup"
+            android:authorities="${applicationId}.androidx-startup"
             android:exported="false"
             tools:node="merge">
             <meta-data

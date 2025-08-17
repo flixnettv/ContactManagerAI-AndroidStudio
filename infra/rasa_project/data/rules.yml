@@ -1,0 +1,14 @@
+version: "3.1"
+rules:
+  - rule: greet
+    steps:
+      - intent: greet
+      - action: utter_greet
+  - rule: set reason
+    steps:
+      - intent: set_call_reason
+      - action: utter_ack_reason
+  - rule: schedule
+    steps:
+      - intent: schedule_call
+      - action: utter_ack_schedule

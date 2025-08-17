@@ -1,3 +1,4 @@
+trigger ci
 # 📱 FlixFlash Contact Manager AI
 
 <div align="center">

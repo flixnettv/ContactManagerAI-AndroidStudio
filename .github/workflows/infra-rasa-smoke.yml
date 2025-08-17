@@ -1,0 +1,35 @@
+name: infra-rasa-smoke
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'infra/rasa_project/**'
+      - '.github/workflows/infra-rasa-smoke.yml'
+
+jobs:
+  rasa-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Train Rasa NLU
+        working-directory: infra/rasa_project
+        run: |
+          docker run --rm -v $(pwd):/app rasa/rasa:3.6.20 train nlu --fixed-model-name nlu
+
+      - name: Run Rasa
+        working-directory: infra
+        run: |
+          docker run -d --name ci_rasa -p 5005:5005 -v $(pwd)/rasa_project:/app rasa/rasa:3.6.20 run --enable-api --cors "*" --port 5005
+          sleep 5
+          curl -s -X POST http://localhost:5005/webhooks/rest/webhook \
+            -H 'Content-Type: application/json' \
+            -d '{"sender":"ci","message":"سبب المكالمة عمل"}' | tee /tmp/rasa_resp.json
+          test -s /tmp/rasa_resp.json
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker rm -f ci_rasa || true

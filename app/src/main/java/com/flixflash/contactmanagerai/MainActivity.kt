@@ -148,14 +148,32 @@ fun MainAppContent() {
                 composable("calls") {
                     CallsScreen()
                 }
+                composable("sms") {
+                    com.flixflash.contactmanagerai.ui.screens.SmsScreen()
+                }
                 composable("ai_assistant") {
-                    AIAssistantScreen()
+                    com.flixflash.contactmanagerai.ui.screens.AiCallScreen()
+                }
+                composable("transcription") {
+                    com.flixflash.contactmanagerai.ui.screens.TranscriptionScreen()
                 }
                 composable("settings") {
-                    SettingsScreen()
+                    SettingsScreen(navController)
+                }
+                composable("blocklist") {
+                    com.flixflash.contactmanagerai.ui.screens.BlocklistScreen()
+                }
+                composable("advanced_settings") {
+                    com.flixflash.contactmanagerai.ui.screens.AdvancedSettingsScreen()
+                }
+                composable("diagnostics") {
+                    com.flixflash.contactmanagerai.ui.screens.DiagnosticsScreen()
                 }
                 composable("add_contact") {
                     AddContactScreen(navController)
+                }
+                composable("caller_id") {
+                    com.flixflash.contactmanagerai.ui.screens.CallerIdScreen()
                 }
             }
         }
@@ -218,6 +236,7 @@ fun FlixFlashBottomNavigation(navController: NavHostController) {
     val items = listOf(
         NavigationItem("home", "الرئيسية", Icons.Default.Home),
         NavigationItem("contacts", "الأشخاص", Icons.Default.Contacts),
+        NavigationItem("sms", "الرسائل", Icons.Default.Message),
         NavigationItem("calls", "المكالمات", Icons.Default.Phone),
         NavigationItem("ai_assistant", "المساعد AI", Icons.Default.SmartToy),
         NavigationItem("settings", "الإعدادات", Icons.Default.Settings)
@@ -598,12 +617,20 @@ fun AIAssistantScreen() {
 }
 
 @Composable
-fun SettingsScreen() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+fun SettingsScreen(navController: NavHostController) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text("شاشة الإعدادات - قيد التطوير")
+        Text("الإعدادات", style = MaterialTheme.typography.titleLarge)
+        Divider()
+        Button(onClick = { navController.navigate("advanced_settings") }) { Text("تفضيلات متقدمة") }
+        Button(onClick = { navController.navigate("caller_id") }) { Text("Caller ID") }
+        Button(onClick = { navController.navigate("transcription") }) { Text("النسخ الحي Vosk") }
+        Button(onClick = { navController.navigate("blocklist") }) { Text("قائمة الحظر") }
+        Button(onClick = { navController.navigate("diagnostics") }) { Text("التشخيص") }
     }
 }
 
