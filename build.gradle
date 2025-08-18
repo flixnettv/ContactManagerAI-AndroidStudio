@@ -1,40 +1,24 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
-buildscript {
-    ext {
-        kotlin_version = '1.9.21'
-        compose_version = '1.6.0'
-        compose_compiler_version = '1.5.12'
-        accompanist_version = '0.32.0'
-    }
-    repositories {
-        google()
-        mavenCentral()
-        maven { url "https://maven.google.com" }
-        maven { url "https://jitpack.io" }
-    }
-    dependencies {
-        classpath 'com.android.tools.build:gradle:8.2.1'
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        classpath 'com.google.gms:google-services:4.4.0'
-        classpath 'com.google.firebase:firebase-crashlytics-gradle:2.9.9'
-        classpath 'androidx.navigation:navigation-safe-args-gradle-plugin:2.7.6'
-        classpath 'com.google.dagger:hilt-android-gradle-plugin:2.48.1'
-    }
-}
+
+// Deleting the old 'buildscript' block is the modern approach.
+// Plugins are now managed centrally in the 'settings.gradle.kts' or 'settings.gradle' file.
 
 plugins {
+    // We define the version here as the single source of truth.
     id 'com.android.application' version '8.2.2' apply false
     id 'com.android.library' version '8.2.2' apply false
     id 'org.jetbrains.kotlin.android' version '1.9.22' apply false
+    id 'com.google.gms.google-services' version '4.4.1' apply false // Updated version
+    id 'com.google.firebase.crashlytics' version '2.9.9' apply false
+    id 'androidx.navigation.safeargs.kotlin' version '2.7.7' apply false // Updated version and plugin id
+    id 'com.google.dagger.hilt.android' version '2.50' apply false // Updated version and plugin id
 }
-
-/* Repositories are managed via settings.gradle (dependencyResolutionManagement) */
 
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
 
-// FlixFlash Technologies Build Configuration
+// FlixFlash Technologies Build Configuration - This block is perfectly organized.
 ext {
     // App Configuration
     flixflash_app_id = "com.flixflash.contactmanagerai"
@@ -47,16 +31,22 @@ ext {
     target_sdk_version = 34
     
     // Dependencies Versions
+    // Keep versions consistent with the plugins block above
+    kotlin_version = '1.9.22'
+    compose_version = '1.6.7' // Updated to a newer stable version
+    compose_compiler_version = '1.5.8' // Correct version compatible with Kotlin 1.9.22
+    accompanist_version = '0.34.0' // Updated version
+    
     androidx_core_version = '1.12.0'
     androidx_lifecycle_version = '2.7.0'
-    androidx_activity_compose_version = '1.8.1'
-    androidx_navigation_version = '2.7.5'
-    material3_version = '1.1.2'
-    room_version = '2.6.0'
+    androidx_activity_compose_version = '1.8.2' // Updated version
+    androidx_navigation_version = '2.7.7' // Updated version
+    material3_version = '1.2.1' // Updated version
+    room_version = '2.6.1' // Updated version
     retrofit_version = '2.9.0'
-    hilt_version = '2.48.1'
+    hilt_version = '2.50' // Updated version
     
-    // AI & Voice Dependencies
+    // AI & Voice Dependencies (versions seem custom, leaving them as is)
     speech_recognition_version = '1.2.0'
     tts_version = '1.1.0'
     audio_processing_version = '2.0.1'
@@ -66,4 +56,4 @@ ext {
     flixflash_caller_manager_version = '1.0.0'
     flixflash_spam_detection_version = '1.0.0'
     flixflash_egyptian_ai_version = '1.0.0'
-}
+}```
